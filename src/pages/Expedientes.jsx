@@ -1,230 +1,191 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { usePacientes } from "../context/ExpedientesContext";
 import ExpedienteForm from "../components/ExpedienteForm";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Search, Eye, Edit, Trash, FilePlus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Expedientes() {
   const { pacientes, agregarPaciente, editarPaciente, eliminarPaciente } = usePacientes();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
-
-  // 🔹 Estados de paginación
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
-  // 🔹 Estados de búsqueda y filtros
   const [search, setSearch] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [gradFilter, setGradFilter] = useState("all");
+  const [fechaFiltro, setFechaFiltro] = useState("");
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(10);
+  const [paginaActual, setPaginaActual] = useState(1);
 
+  // Handlers
   const handleSubmit = (paciente) => {
-    if (editing) {
-      editarPaciente(editing.id, paciente);
-    } else {
-      agregarPaciente(paciente);
-    }
+    if (editing) editarPaciente(editing.id, paciente);
+    else agregarPaciente(paciente);
     setEditing(null);
     setShowForm(false);
   };
+  const handleEdit = (paciente) => { setEditing(paciente); setShowForm(true); };
+  const handleCancel = () => { setEditing(null); setShowForm(false); };
 
-  const handleEdit = (paciente) => {
-    setEditing(paciente);
-    setShowForm(true);
-  };
+  // Filtrado
+  const pacientesFiltrados = useMemo(() => {
+    return pacientes.filter(p =>
+      p.nombre.toLowerCase().includes(search.toLowerCase()) ||
+      p.id.toString().includes(search) ||
+      p.dui?.includes(search)
+    ).filter(p => fechaFiltro === "" || p.fechaCita === fechaFiltro);
+  }, [pacientes, search, fechaFiltro]);
 
-  const handleCancel = () => {
-    setEditing(null);
-    setShowForm(false);
-  };
-
-  // 🔹 Aplicar búsqueda y filtros antes de paginar
-  const filteredPacientes = pacientes.filter((p) => {
-    // Búsqueda por nombre
-    const matchSearch = p.nombre.toLowerCase().includes(search.toLowerCase());
-
-    // Filtro por rango de fechas
-    const matchDate =
-      (!startDate || p.fechaCita >= startDate) &&
-      (!endDate || p.fechaCita <= endDate);
-
-    // Filtro por graduación
-    let matchGrad = true;
-    if (gradFilter === "positive") matchGrad = parseFloat(p.graduacion) > 0;
-    if (gradFilter === "negative") matchGrad = parseFloat(p.graduacion) < 0;
-
-    return matchSearch && matchDate && matchGrad;
-  });
-
-  // 🔹 Calcular pacientes mostrados (después de filtrar)
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentPacientes = filteredPacientes.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredPacientes.length / itemsPerPage);
+  // Paginación
+  const totalPaginas = Math.ceil(pacientesFiltrados.length / registrosPorPagina);
+  const pacientesMostrados = pacientesFiltrados.slice(
+    (paginaActual - 1) * registrosPorPagina,
+    paginaActual * registrosPorPagina
+  );
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="container mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-          Expedientes de Óptica
+    <div className="min-h-screen bg-gray-100 flex flex-col p-4 md:p-6">
+      {/* Header */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h1 className="text-3xl font-extrabold text-blue-700">
+          Gestión de Expedientes - Óptica
         </h1>
+<Button
+  className="bg-blue-600 text-white flex items-center gap-2"
+  onClick={() => navigate("/expedientes/nuevo")}
+>
+  <FilePlus size={18} /> Nuevo Expediente
+</Button>
+      </header>
 
-        <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-          <button
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-            onClick={() => setShowForm(true)}
-          >
-            Agregar Paciente
-          </button>
-
-          {/* 🔹 Selector de cantidad */}
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700">Mostrar:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="border rounded p-2 text-gray-700"
-            >
-              <option value={10}>10</option>
-              <option value={30}>30</option>
-              <option value={50}>50</option>
-            </select>
-          </div>
-        </div>
-
-        {/* 🔹 Barra de búsqueda y filtros */}
-        <div className="bg-white p-4 rounded shadow mb-6 flex flex-wrap gap-4 items-center">
-          <input
-            type="text"
-            placeholder="Buscar por nombre..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="border p-2 rounded w-60 text-gray-700"
-          />
-
-          <div className="flex items-center gap-2">
-            <label className="text-gray-700">Desde:</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="border p-2 rounded text-gray-700"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-gray-700">Hasta:</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="border p-2 rounded text-gray-700"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-gray-700">Graduación:</label>
-            <select
-              value={gradFilter}
-              onChange={(e) => {
-                setGradFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="border p-2 rounded text-gray-700"
-            >
-              <option value="all">Todas</option>
-              <option value="positive">Positivas</option>
-              <option value="negative">Negativas</option>
-            </select>
-          </div>
-        </div>
-
-        {showForm && (
-          <ExpedienteForm
-            pacienteActual={editing}
-            onSubmit={handleSubmit}
-            onCancel={handleCancel}
-          />
-        )}
-
-        {/* 🔹 Tabla responsive */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse mt-4 bg-white shadow-md rounded">
-            <thead>
-              <tr className="bg-gray-200 text-gray-700">
-                <th className="border p-2">ID</th>
-                <th className="border p-2">Nombre</th>
-                <th className="border p-2">Fecha de Cita</th>
-                <th className="border p-2">Graduación</th>
-                <th className="border p-2">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentPacientes.map((p) => (
-                <tr key={p.id} className="text-center border-b hover:bg-gray-50">
-                  <td className="p-2 text-gray-800">{p.id}</td>
-                  <td className="p-2 text-gray-800">{p.nombre}</td>
-                  <td className="p-2 text-gray-800">{p.fechaCita}</td>
-                  <td className="p-2 text-gray-800">{p.graduacion}</td>
-                  <td className="p-2 flex justify-center gap-2">
-                    <button
-                      className="bg-yellow-400 hover:bg-yellow-500 px-2 py-1 rounded"
-                      onClick={() => handleEdit(p)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
-                      onClick={() => eliminarPaciente(p.id)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {currentPacientes.length === 0 && (
-                <tr>
-                  <td colSpan="5" className="p-4 text-gray-500">
-                    No hay pacientes para mostrar.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* 🔹 Controles de paginación */}
-        <div className="flex justify-between items-center mt-4">
-          <button
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => prev - 1)}
-          >
-            Anterior
-          </button>
-          <span className="text-gray-700">
-            Página {currentPage} de {totalPages || 1}
-          </span>
-          <button
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
-            disabled={currentPage === totalPages || totalPages === 0}
-            onClick={() => setCurrentPage((prev) => prev + 1)}
-          >
-            Siguiente
-          </button>
-        </div>
+      {/* Filtros */}
+      <div className="flex flex-col md:flex-row gap-2 mb-6 flex-wrap">
+        <Input
+          placeholder="Buscar por nombre, ID o DUI"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 min-w-[200px]"
+        />
+        <Input
+          type="date"
+          value={fechaFiltro}
+          onChange={(e) => setFechaFiltro(e.target.value)}
+          className="flex-1 min-w-[150px]"
+        />
+        <Select
+          value={registrosPorPagina}
+          onChange={(e) => { setRegistrosPorPagina(Number(e.target.value)); setPaginaActual(1); }}
+          className="flex-1 min-w-[120px]"
+        >
+          <option value={10}>10 por página</option>
+          <option value={30}>30 por página</option>
+          <option value={50}>50 por página</option>
+        </Select>
       </div>
+
+      {/* Formulario */}
+      {showForm && (
+        <Card className="mb-6 shadow-lg">
+          <CardContent className="p-4">
+            <ExpedienteForm
+              pacienteActual={editing}
+              onSubmit={handleSubmit}
+              onCancel={handleCancel}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Lista de expedientes */}
+      <Card className="flex-1 shadow-lg overflow-hidden">
+  <CardContent className="p-2">
+    <div className="overflow-x-hidden">
+      <table className="w-full text-left table-auto border-collapse text-sm">
+        <thead>
+          <tr className="border-b bg-gray-50">
+            <th className="p-1 text-blue-700">ID</th>
+            <th className="p-1 text-blue-700">Nombre</th>
+            <th className="p-1 text-blue-700">DUI</th>
+            <th className="p-1 text-blue-700">Teléfono</th>
+            <th className="p-1 text-blue-700">Tipo Lentes</th>
+            <th className="p-1 text-blue-700">Aro</th>
+            <th className="p-1 text-blue-700">Tratamiento</th>
+            <th className="p-1 text-blue-700">RX OD</th>
+            <th className="p-1 text-blue-700">RX OI</th>
+            <th className="p-1 text-blue-700">Total Cancelado</th>
+            <th className="p-1 text-blue-700">Fecha</th>
+            <th className="p-1 text-center text-blue-700">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pacientesMostrados.map((p) => (
+            <tr key={p.id} className="border-b hover:bg-gray-50 text-xs">
+              <td className="p-1">{p.id}</td>
+              <td className="p-1">{p.nombre}</td>
+              <td className="p-1">{p.dui}</td>
+              <td className="p-1">{p.telefono}</td>
+              <td className="p-1">{p.tipoLentes}</td>
+              <td className="p-1">{p.aro}</td>
+              <td className="p-1">{p.tratamiento}</td>
+              <td className="p-1">
+                ESF: {p.rx?.OD?.esf} <br />
+                CIL: {p.rx?.OD?.cil} <br />
+                EJE: {p.rx?.OD?.eje} <br />
+                ADD: {p.rx?.OD?.add}
+              </td>
+              <td className="p-1">
+                ESF: {p.rx?.OI?.esf} <br />
+                CIL: {p.rx?.OI?.cil} <br />
+                EJE: {p.rx?.OI?.eje} <br />
+                ADD: {p.rx?.OI?.add}
+              </td>
+              <td className="p-1">{p.totalCancelado}</td>
+              <td className="p-1">{p.fechaCita}</td>
+              <td className="p-1 flex justify-center gap-1 whitespace-nowrap">
+                <Button variant="outline" size="xs"><Eye size={14} color="white" /></Button>
+                <Button variant="outline" size="xs" onClick={() => navigate(`/expedientes/editar/${p.id}`)}><Edit size={14} color="white" /></Button>
+                <Button variant="destructive" size="xs" onClick={() => eliminarPaciente(p.id)}><Trash size={14} /></Button>
+              </td>
+            </tr>
+          ))}
+          {pacientesMostrados.length === 0 && (
+            <tr>
+              <td colSpan="12" className="text-center p-2 text-gray-500">
+                No se encontraron resultados
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+
+    {/* Paginación */}
+    <div className="mt-2 flex flex-wrap justify-between items-center gap-2">
+      <div>
+        <Button
+          disabled={paginaActual === 1}
+          onClick={() => setPaginaActual(p => p - 1)}
+          size="sm"
+        >
+          Anterior
+        </Button>
+        <Button
+          disabled={paginaActual === totalPaginas}
+          onClick={() => setPaginaActual(p => p + 1)}
+          size="sm"
+          className="ml-2"
+        >
+          Siguiente
+        </Button>
+      </div>
+      <span className="text-gray-600 text-sm">
+        Página {paginaActual} de {totalPaginas}
+      </span>
+    </div>
+  </CardContent>
+</Card>
+
     </div>
   );
 }
