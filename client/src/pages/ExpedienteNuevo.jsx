@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { usePacientes } from "../context/ExpedientesContext";
-import ExpedienteForm from "../components/ExpedienteForm";
+import { usePacientes } from "@/context/ExpedientesContext";
+import ExpedienteForm from "@/components/ExpedienteForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -9,17 +8,22 @@ import { ArrowLeft } from "lucide-react";
 export default function ExpedienteFormPage() {
   const { pacientes, agregarPaciente, editarPaciente } = usePacientes();
   const navigate = useNavigate();
-  const { id } = useParams(); // Para editar, obtenemos el id desde la ruta
+  const { id } = useParams();
 
-  const pacienteActual = id ? pacientes.find(p => p.id.toString() === id) : null;
+  const pacienteActual = id ? pacientes.find(p => String(p.id) === id) : null;
 
-  const handleSubmit = (paciente) => {
-    if (pacienteActual) {
-      editarPaciente(pacienteActual.id, paciente);
-    } else {
-      agregarPaciente(paciente);
+  const handleSubmit = async (paciente) => {
+    try {
+      if (pacienteActual) {
+        await editarPaciente(pacienteActual.id, paciente);
+      } else {
+        await agregarPaciente(paciente);
+      }
+      navigate("/expedientes");
+    } catch (e) {
+      console.error(e);
+      alert("Ocurrió un error guardando el expediente.");
     }
-    navigate("/expedientes"); // Volver a la lista después de guardar
   };
 
   return (
@@ -30,8 +34,8 @@ export default function ExpedienteFormPage() {
             <h1 className="text-2xl font-bold text-blue-700">
               {pacienteActual ? "Editar Expediente" : "Nuevo Expediente"}
             </h1>
-            <Button variant="outline" onClick={() => navigate("/expedientes")}>
-              <ArrowLeft size={18} /> Volver
+            <Button variant="default" onClick={() => navigate("/expedientes")}>
+              <ArrowLeft size={18} color="white" /> Volver 
             </Button>
           </div>
           <ExpedienteForm
