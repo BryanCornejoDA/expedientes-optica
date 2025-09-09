@@ -16,6 +16,38 @@ const DATA_DIR = process.env.DATA_DIR
   || path.join(os.homedir(), "expedientes-optica-data");
 const DB_FILE = path.join(DATA_DIR, "pacientes.json");
 
+function validarPaciente(b) {
+  const e = {};
+  if (!b.nombre || String(b.nombre).trim().length < 3) e.nombre = "nombre";
+  if (!/^\d{8}-\d$/.test(b.dui || "")) e.dui = "dui";
+  if (!/^\d{7,9}$/.test(b.telefono || "")) e.telefono = "telefono";
+  if (!b.tipoLentes) e.tipoLentes = "tipoLentes";
+  if (!b.aro) e.aro = "aro";
+  if (!b.tratamiento) e.tratamiento = "tratamiento";
+  if (!b.fechaCita || isNaN(new Date(b.fechaCita).getTime())) e.fechaCita = "fechaCita";
+  const tot = Number(b.totalCancelado);
+  if (!(b.totalCancelado !== "" && !Number.isNaN(tot) && tot >= 0)) e.totalCancelado = "totalCancelado";
+
+  // RX (si vienen)
+  const checkOjo = (ojo) => {
+    if (!ojo) return {};
+    const ee = {};
+    const num = (v) => v === "" || v === null || v === undefined || /^-?\d+(\.\d+)?$/.test(String(v));
+    const eje = (v) => v === "" || v === null || v === undefined || (/^\d+$/.test(String(v)) && +v >= 0 && +v <= 180);
+    if (!num(ojo.esf)) ee.esf = true;
+    if (!num(ojo.cil)) ee.cil = true;
+    if (!num(ojo.add)) ee.add = true;
+    if (!eje(ojo.eje)) ee.eje = true;
+    return ee;
+  };
+  const od = checkOjo(b.rx?.OD);
+  const oi = checkOjo(b.rx?.OI);
+  if (Object.keys(od).length) e.OD = od;
+  if (Object.keys(oi).length) e.OI = oi;
+
+  return e;
+}
+
 function ensureDataFile() {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -99,6 +131,8 @@ app.get("/api/pacientes", (req, res) => {
 
 app.post("/api/pacientes", (req, res) => {
   try {
+    const errores = validarPaciente(req.body);
+    if (Object.keys(errores).length) return res.status(400).json({ errores });
     const pacientes = leerPacientes();
     const nextId = pacientes.length ? Math.max(...pacientes.map(p => p.id)) + 1 : 1;
     const nuevo = { id: nextId, ...req.body };
@@ -117,6 +151,11 @@ app.get("/", (_, res) => res.send("Optica Expedientes API OK"));
 // Evita que un error no capturado mate el proceso en dev
 process.on("uncaughtException", (e) => console.error("uncaughtException:", e));
 process.on("unhandledRejection", (e) => console.error("unhandledRejection:", e));
+
+app.put("/api/pacientes/:id", (req, res) => {
+  const errores = validarPaciente(req.body);
+  if (Object.keys(errores).length) return res.status(400).json({ errores });
+});
 
 app.listen(PORT, () => {
   ensureDataFile();

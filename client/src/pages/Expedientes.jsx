@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Eye, Edit, Trash, FilePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "@/theme/ThemeToggle";
 
 export default function Expedientes() {
   const { pacientes, eliminarPaciente, loading, error } = usePacientes();
   const navigate = useNavigate();
-
   const [search, setSearch] = useState("");
   const [fechaFiltro, setFechaFiltro] = useState("");
   const [registrosPorPagina, setRegistrosPorPagina] = useState(10);
@@ -32,114 +32,102 @@ export default function Expedientes() {
     paginaActual * registrosPorPagina
   );
 
-  const onEliminar = async (id) => {
-    if (confirm(`¿Eliminar el expediente #${id}? Esta acción no se puede deshacer.`)) {
-      try { await eliminarPaciente(id); }
-      catch (e) { alert("No se pudo eliminar: " + (e?.message ?? "")); }
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col p-4 md:p-6">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-extrabold text-blue-700">Gestión de Expedientes - Óptica</h1>
-        <Button className="bg-blue-600 text-white flex items-center gap-2" onClick={() => navigate("/expedientes/nuevo")}>
-          <FilePlus size={18} /> Nuevo Expediente
-        </Button>
-      </header>
-
-      <div className="flex flex-col md:flex-row gap-2 mb-6 flex-wrap">
-        <Input placeholder="Buscar por nombre, ID o DUI" value={search} onChange={(e) => { setSearch(e.target.value); setPaginaActual(1); }} className="flex-1 min-w-[200px]" />
-        <Input type="date" value={fechaFiltro} onChange={(e) => { setFechaFiltro(e.target.value); setPaginaActual(1); }} className="flex-1 min-w-[150px]" />
-        <Select value={registrosPorPagina} onChange={(e) => { setRegistrosPorPagina(Number(e.target.value)); setPaginaActual(1); }} className="flex-1 min-w-[120px]">
-          <option value={10}>10 por página</option>
-          <option value={30}>30 por página</option>
-          <option value={50}>50 por página</option>
-        </Select>
+    <div className="min-h-screen px-4 py-4 md:px-6 md:py-6">
+      {/* Header */}
+      <div className="mb-4 flex flex-col gap-3 md:mb-6 md:flex-row md:items-center md:justify-between">
+        <h1 className="section-title">Gestión de Expedientes - Óptica</h1>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button className="btn btn-green" onClick={() => navigate("/expedientes/nuevo")}>
+            <FilePlus size={18} /> Nuevo Expediente
+          </Button>
+        </div>
       </div>
 
-      {loading && <div className="p-4 text-sm text-gray-600">Cargando expedientes…</div>}
-      {error && <div className="p-4 text-sm text-red-600">Error: {error}</div>}
+      {/* Banner de estado (similar al de la captura) */}
+      {error && <div className="alert-success">Ocurrió un error: {error}</div>}
 
-      {!loading && (
-        <Card className="flex-1 shadow-lg overflow-hidden">
-          <CardContent className="p-2">
-            <div className="overflow-x-hidden">
-              <table className="w-full text-left table-auto border-collapse text-sm">
-                <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="p-1 text-blue-700">ID</th>
-                    <th className="p-1 text-blue-700">Nombre</th>
-                    <th className="p-1 text-blue-700">DUI</th>
-                    <th className="p-1 text-blue-700">Teléfono</th>
-                    <th className="p-1 text-blue-700">Tipo Lentes</th>
-                    <th className="p-1 text-blue-700">Aro</th>
-                    <th className="p-1 text-blue-700">Tratamiento</th>
-                    <th className="p-1 text-blue-700">RX OD</th>
-                    <th className="p-1 text-blue-700">RX OI</th>
-                    <th className="p-1 text-blue-700">Total Cancelado</th>
-                    <th className="p-1 text-blue-700">Fecha</th>
-                    <th className="p-1 text-center text-blue-700">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pacientesMostrados.map((p) => (
-                    <tr key={p.id} className="border-b hover:bg-gray-50 text-xs">
-                      <td className="p-1">{p.id}</td>
-                      <td className="p-1">{p.nombre}</td>
-                      <td className="p-1">{p.dui}</td>
-                      <td className="p-1">{p.telefono}</td>
-                      <td className="p-1">{p.tipoLentes}</td>
-                      <td className="p-1">{p.aro}</td>
-                      <td className="p-1">{p.tratamiento}</td>
-                      <td className="p-1">
-                        ESF: {p.rx?.OD?.esf} <br />
-                        CIL: {p.rx?.OD?.cil} <br />
-                        EJE: {p.rx?.OD?.eje} <br />
-                        ADD: {p.rx?.OD?.add}
-                      </td>
-                      <td className="p-1">
-                        ESF: {p.rx?.OI?.esf} <br />
-                        CIL: {p.rx?.OI?.cil} <br />
-                        EJE: {p.rx?.OI?.eje} <br />
-                        ADD: {p.rx?.OI?.add}
-                      </td>
-                      <td className="p-1">{p.totalCancelado}</td>
-                      <td className="p-1">{p.fechaCita}</td>
-                      <td className="p-1 flex justify-center gap-1 whitespace-nowrap">
-                        <Button variant="outline" size="xs" onClick={() => {/* ver detalle */}}>
-                          <Eye size={14} color="white"/>
-                        </Button>
-                        <Button variant="outline" size="xs" onClick={() => navigate(`/expedientes/editar/${p.id}`)}>
-                          <Edit size={14} color="white"/>
-                        </Button>
-                        <Button variant="destructive" size="xs" onClick={() => onEliminar(p.id)}>
-                          <Trash size={14} />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                  {pacientesMostrados.length === 0 && (
-                    <tr>
-                      <td colSpan="12" className="text-center p-2 text-gray-500">
-                        No se encontraron resultados
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+      {/* Filtros */}
+      <Card className="mb-4">
+        <CardContent className="grid gap-2 md:grid-cols-3">
+          <Input placeholder="Buscar por nombre, ID o DUI" value={search}
+            onChange={(e) => { setSearch(e.target.value); setPaginaActual(1); }} />
+          <Input type="date" value={fechaFiltro}
+            onChange={(e) => { setFechaFiltro(e.target.value); setPaginaActual(1); }} />
+          <Select value={registrosPorPagina}
+            onChange={(e) => { setRegistrosPorPagina(Number(e.target.value)); setPaginaActual(1); }}>
+            <option value={10}>10 por página</option>
+            <option value={30}>30 por página</option>
+            <option value={50}>50 por página</option>
+          </Select>
+        </CardContent>
+      </Card>
 
-            <div className="mt-2 flex flex-wrap justify-between items-center gap-2">
-              <div>
-                <Button disabled={paginaActual === 1} onClick={() => setPaginaActual(p => p - 1)} size="sm">Anterior</Button>
-                <Button disabled={paginaActual === totalPaginas} onClick={() => setPaginaActual(p => p + 1)} size="sm" className="ml-2">Siguiente</Button>
-              </div>
-              <span className="text-gray-600 text-sm">Página {paginaActual} de {totalPaginas}</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Tabla */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>DUI</th>
+                <th>Teléfono</th>
+                <th>Tipo Lentes</th>
+                <th>Aro</th>
+                <th>Tratamiento</th>
+                <th>RX OD</th>
+                <th>RX OI</th>
+                <th>Total</th>
+                <th>Fecha</th>
+                <th className="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pacientesMostrados.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.id}</td>
+                  <td>{p.nombre}</td>
+                  <td>{p.dui}</td>
+                  <td>{p.telefono}</td>
+                  <td>{p.tipoLentes}</td>
+                  <td>{p.aro}</td>
+                  <td>{p.tratamiento}</td>
+                  <td>
+                    ESF: {p.rx?.OD?.esf}<br/>
+                    CIL: {p.rx?.OD?.cil}<br/>
+                    EJE: {p.rx?.OD?.eje}<br/>
+                    ADD: {p.rx?.OD?.add}<br/>
+                    MED: {p.rx?.OD?.medidas}
+                  </td>
+                  <td>
+                    ESF: {p.rx?.OI?.esf}<br/>
+                    CIL: {p.rx?.OI?.cil}<br/>
+                    EJE: {p.rx?.OI?.eje}<br/>
+                    ADD: {p.rx?.OI?.add}<br/>
+                    MED: {p.rx?.OI?.medidas}
+                  </td>
+                  <td>{p.totalCancelado}</td>
+                  <td>{p.fechaCita}</td>
+                  <td>
+                    <div className="flex justify-center gap-2">
+                      <Button variant="success" className="btn-green"><Eye size={14}/></Button>
+                      <Button variant="default" className="btn-blue" onClick={() => navigate(`/expedientes/editar/${p.id}`)}><Edit size={14}/></Button>
+                      <Button variant="destructive" className="btn-red" onClick={() => confirm(`¿Eliminar #${p.id}?`) && eliminarPaciente(p.id)}><Trash size={14}/></Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {pacientesMostrados.length === 0 && (
+                <tr>
+                  <td colSpan="12" className="p-4 text-center text-slate-500">No se encontraron resultados</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
