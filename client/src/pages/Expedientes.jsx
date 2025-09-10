@@ -8,13 +8,22 @@ import { Eye, Edit, Trash, FilePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/theme/ThemeToggle";
 
+/* 👇 nuevos imports */
+import Modal from "@/components/ui/modal";
+import ExpedienteViewer from "@/components/ExpedienteViewer";
+
 export default function Expedientes() {
-  const { pacientes, eliminarPaciente, loading, error } = usePacientes();
+  const { pacientes, eliminarPaciente } = usePacientes();
   const navigate = useNavigate();
+
   const [search, setSearch] = useState("");
   const [fechaFiltro, setFechaFiltro] = useState("");
   const [registrosPorPagina, setRegistrosPorPagina] = useState(10);
   const [paginaActual, setPaginaActual] = useState(1);
+
+  /* 👇 estado para visor */
+  const [openView, setOpenView] = useState(false);
+  const [pacienteView, setPacienteView] = useState(null);
 
   const pacientesFiltrados = useMemo(() => {
     return pacientes
@@ -32,6 +41,15 @@ export default function Expedientes() {
     paginaActual * registrosPorPagina
   );
 
+  const openViewer = (p) => {
+    setPacienteView(p);
+    setOpenView(true);
+  };
+  const closeViewer = () => {
+    setOpenView(false);
+    setPacienteView(null);
+  };
+
   return (
     <div className="min-h-screen px-4 py-4 md:px-6 md:py-6">
       {/* Header */}
@@ -39,24 +57,21 @@ export default function Expedientes() {
         <h1 className="section-title">Gestión de Expedientes - Óptica</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button className="btn btn-green" onClick={() => navigate("/expedientes/nuevo")}>
+          <Button className="btn-green" onClick={() => navigate("/expedientes/nuevo")}>
             <FilePlus size={18} /> Nuevo Expediente
           </Button>
         </div>
       </div>
 
-      {/* Banner de estado (similar al de la captura) */}
-      {error && <div className="alert-success">Ocurrió un error: {error}</div>}
-
       {/* Filtros */}
       <Card className="mb-4">
         <CardContent className="grid gap-2 md:grid-cols-3">
           <Input placeholder="Buscar por nombre, ID o DUI" value={search}
-            onChange={(e) => { setSearch(e.target.value); setPaginaActual(1); }} />
+                 onChange={(e) => { setSearch(e.target.value); setPaginaActual(1); }} />
           <Input type="date" value={fechaFiltro}
-            onChange={(e) => { setFechaFiltro(e.target.value); setPaginaActual(1); }} />
+                 onChange={(e) => { setFechaFiltro(e.target.value); setPaginaActual(1); }} />
           <Select value={registrosPorPagina}
-            onChange={(e) => { setRegistrosPorPagina(Number(e.target.value)); setPaginaActual(1); }}>
+                  onChange={(e) => { setRegistrosPorPagina(Number(e.target.value)); setPaginaActual(1); }}>
             <option value={10}>10 por página</option>
             <option value={30}>30 por página</option>
             <option value={50}>50 por página</option>
@@ -70,17 +85,9 @@ export default function Expedientes() {
           <table className="table">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>DUI</th>
-                <th>Teléfono</th>
-                <th>Tipo Lentes</th>
-                <th>Aro</th>
-                <th>Tratamiento</th>
-                <th>RX OD</th>
-                <th>RX OI</th>
-                <th>Total</th>
-                <th>Fecha</th>
+                <th>#</th><th>Nombre</th><th>DUI</th><th>Teléfono</th>
+                <th>Tipo Lentes</th><th>Aro</th><th>Tratamiento</th>
+                <th>RX OD</th><th>RX OI</th><th>Total</th><th>Fecha</th>
                 <th className="text-center">Acciones</th>
               </tr>
             </thead>
@@ -112,9 +119,15 @@ export default function Expedientes() {
                   <td>{p.fechaCita}</td>
                   <td>
                     <div className="flex justify-center gap-2">
-                      <Button variant="success" className="btn-green"><Eye size={14}/></Button>
-                      <Button variant="default" className="btn-blue" onClick={() => navigate(`/expedientes/editar/${p.id}`)}><Edit size={14}/></Button>
-                      <Button variant="destructive" className="btn-red" onClick={() => confirm(`¿Eliminar #${p.id}?`) && eliminarPaciente(p.id)}><Trash size={14}/></Button>
+                      <Button className="btn-green" onClick={() => openViewer(p)}>
+                        <Eye size={14}/>
+                      </Button>
+                      <Button className="btn-blue" onClick={() => navigate(`/expedientes/editar/${p.id}`)}>
+                        <Edit size={14}/>
+                      </Button>
+                      <Button className="btn-red" onClick={() => confirm(`¿Eliminar #${p.id}?`) && eliminarPaciente(p.id)}>
+                        <Trash size={14}/>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -128,6 +141,9 @@ export default function Expedientes() {
           </table>
         </CardContent>
       </Card>
+      <Modal open={openView} onClose={closeViewer}>
+        <ExpedienteViewer paciente={pacienteView} onClose={closeViewer} />
+      </Modal>
     </div>
   );
 }
