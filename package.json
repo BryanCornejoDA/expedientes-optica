@@ -23,6 +23,7 @@
   "homepage": "https://github.com/BryanCornejoDA/expedientes-optica#readme",
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",
+    "liquid-glass-react": "^1.1.1",
     "tailwindcss": "^4.1.13"
   }
 }

@@ -7,8 +7,7 @@ import { Select } from "@/components/ui/select";
 import { Eye, Edit, Trash, FilePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "@/theme/ThemeToggle";
-
-/* 👇 nuevos imports */
+import LiquidGlass from 'liquid-glass-react'
 import Modal from "@/components/ui/modal";
 import ExpedienteViewer from "@/components/ExpedienteViewer";
 
@@ -50,7 +49,7 @@ export default function Expedientes() {
     setPacienteView(null);
   };
 
-  return (
+  return ( 
     <div className="min-h-screen px-4 py-4 md:px-6 md:py-6">
       {/* Header */}
       <div className="mb-4 flex flex-col gap-3 md:mb-6 md:flex-row md:items-center md:justify-between">

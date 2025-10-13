@@ -28,6 +28,7 @@ export default function ExpedienteViewer({ paciente, onClose }) {
 
   return (
     <>
+    
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-gray-200 p-4 dark:border-gray-700">
         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
