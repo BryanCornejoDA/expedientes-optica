@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePacientes } from "@/context/ExpedientesContext";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -111,6 +112,8 @@ export default function ExpedienteForm({ pacienteActual, onSubmit, onCancel }) {
   // Para resaltar inputs con error
   const errClass = (name) =>
     errors[name] ? "border-red-500 focus:ring-red-500 focus:border-red-500" : "";
+
+  const { loading } = usePacientes();
 
   const submit = (e) => {
     e.preventDefault();
@@ -333,9 +336,9 @@ export default function ExpedienteForm({ pacienteActual, onSubmit, onCancel }) {
 
       {/* Acciones */}
       <div className="mt-2 flex items-center gap-2">
-        <Button className="btn-green" type="submit">
-          {pacienteActual ? "Guardar cambios" : "Registrar"}
-        </Button>
+          <Button className="btn-green" type="submit" disabled={loading}>
+            {loading ? (pacienteActual ? "Guardando..." : "Registrando...") : (pacienteActual ? "Guardar cambios" : "Registrar")}
+          </Button>
         <Button className="btn-outline" type="button" onClick={onCancel}>Cancelar</Button>
       </div>
     </form>

@@ -26,25 +26,49 @@ export function ExpedientesProvider({ children }) {
   const normFecha = (f) => (f ? new Date(f).toISOString().slice(0,10) : "");
 
   const agregarPaciente = async (paciente) => {
-    const body = { ...paciente, fechaCita: normFecha(paciente.fechaCita) };
-    const creado = await addPaciente(body);
-    setPacientes(prev => [...prev, creado]);
-    return creado;
+    setLoading(true); setError(null);
+    try {
+      const body = { ...paciente, fechaCita: normFecha(paciente.fechaCita) };
+      const creado = await addPaciente(body);
+      setPacientes(prev => [...prev, creado]);
+      return creado;
+    } catch (e) {
+      setError(e.message || 'Error creando paciente');
+      throw e;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const editarPaciente = async (id, cambios) => {
-    const body = {
-      ...cambios,
-      ...(cambios.fechaCita !== undefined ? { fechaCita: normFecha(cambios.fechaCita) } : {})
-    };
-    const actualizado = await updatePaciente(id, body);
-    setPacientes(prev => prev.map(p => p.id === id ? actualizado : p));
-    return actualizado;
+    setLoading(true); setError(null);
+    try {
+      const body = {
+        ...cambios,
+        ...(cambios.fechaCita !== undefined ? { fechaCita: normFecha(cambios.fechaCita) } : {})
+      };
+      const actualizado = await updatePaciente(id, body);
+      setPacientes(prev => prev.map(p => p.id === id ? actualizado : p));
+      return actualizado;
+    } catch (e) {
+      setError(e.message || 'Error actualizando paciente');
+      throw e;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const eliminarPaciente = async (id) => {
-    await deletePaciente(id);
-    setPacientes(prev => prev.filter(p => p.id !== id));
+    setLoading(true); setError(null);
+    try {
+      await deletePaciente(id);
+      setPacientes(prev => prev.filter(p => p.id !== id));
+    } catch (e) {
+      setError(e.message || 'Error eliminando paciente');
+      throw e;
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
