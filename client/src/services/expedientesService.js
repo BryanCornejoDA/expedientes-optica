@@ -1,5 +1,8 @@
-// Usa el proxy: NO .env, NO CORS
-const API = "/api";
+// Base API: prefer env var VITE_API_URL; si no existe, apuntar por defecto a la API en Render
+// Asegúrate en tu hosting (Vercel/Render) de definir VITE_API_URL si quieres sobrescribirlo.
+const API = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
+  ? String(import.meta.env.VITE_API_URL).replace(/\/$/, '')
+  : 'https://expedientes-optica.onrender.com/api';
 
 export const getPacientes = async () => {
   const res = await fetch(`${API}/pacientes`);
